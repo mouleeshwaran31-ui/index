@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Needle Positioning System | Team-4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Exo+2:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --neon: #00d4ff;
+    --neon2: #0077ff;
+    --neon3: #00ffcc;
+    --bg: #020b14;
+    --bg2: #040f1c;
+    --glass: rgba(0,180,255,0.04);
+    --glass-border: rgba(0,212,255,0.18);
+    --text: #c8e8f5;
+    --muted: #4a7a95;
+    --white: #e8f4fc;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    line-height: 1.7;
+  }
+
+  /* ── CANVAS BACKGROUND ── */
+  #particles-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── SCANLINE OVERLAY ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 3rem;
+    background: rgba(2,11,20,0.7);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .nav-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--neon);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-shadow: 0 0 16px var(--neon);
+  }
+
+  .nav-logo span { color: var(--white); }
+
+  .nav-links {
+    display: flex;
+    gap: 2.2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.3s, text-shadow 0.3s;
+  }
+
+  .nav-links a:hover {
+    color: var(--neon);
+    text-shadow: 0 0 10px var(--neon);
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    position: relative;
+    z-index: 2;
+    padding: 6rem 6vw;
+  }
+
+  /* ── HERO ── */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding-top: 5rem;
+  }
+
+  .team-badge {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    color: var(--neon);
+    text-transform: uppercase;
+    border: 1px solid var(--glass-border);
+    padding: 0.45rem 1.4rem;
+    border-radius: 50px;
+    margin-bottom: 2rem;
+    background: rgba(0,212,255,0.06);
+    animation: pulse-badge 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-badge {
+    0%, 100% { box-shadow: 0 0 8px rgba(0,212,255,0.3); }
+    50% { box-shadow: 0 0 22px rgba(0,212,255,0.6), 0 0 40px rgba(0,212,255,0.2); }
+  }
+
+  .hero-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2rem, 5.5vw, 5.2rem);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--white);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-title .accent {
+    display: block;
+    background: linear-gradient(90deg, var(--neon), var(--neon3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 20px rgba(0,212,255,0.5));
+  }
+
+  .hero-subtitle {
+    font-size: 1.05rem;
+    font-weight: 300;
+    color: var(--muted);
+    max-width: 640px;
+    margin: 1.5rem auto 3rem;
+    letter-spacing: 0.03em;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 0.85rem 2rem;
+    border-radius: 4px;
+    border: 1px solid var(--neon);
+    color: var(--neon);
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--neon), var(--neon2));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .btn:hover::before { opacity: 1; }
+  .btn:hover {
+    color: var(--bg);
+    box-shadow: 0 0 24px rgba(0,212,255,0.5);
+  }
+
+  .btn span { position: relative; z-index: 1; }
+
+  .btn-ghost {
+    border-color: var(--glass-border);
+    color: var(--muted);
+  }
+
+  .btn-ghost::before {
+    background: rgba(0,212,255,0.08);
+    opacity: 0;
+  }
+
+  .btn-ghost:hover {
+    color: var(--neon);
+    box-shadow: none;
+    border-color: var(--neon);
+  }
+
+  /* ── SECTION HEADER ── */
+  .sec-header {
+    margin-bottom: 3.5rem;
+  }
+
+  .sec-tag {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--neon);
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  .sec-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.6rem, 3vw, 2.6rem);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .sec-line {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon), transparent);
+    margin-top: 1rem;
+  }
+
+  /* ── OVERVIEW ── */
+  #overview {
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+  }
+
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+  }
+
+  .overview-text p {
+    margin-bottom: 1.2rem;
+    color: var(--text);
+    font-size: 0.97rem;
+    line-height: 1.9;
+  }
+
+  .overview-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .stat-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .stat-card:hover {
+    border-color: var(--neon);
+    box-shadow: 0 0 20px rgba(0,212,255,0.15);
+  }
+
+  .stat-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--neon);
+    text-shadow: 0 0 12px var(--neon);
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.3rem;
+  }
+
+  /* ── PROCESS ── */
+  #process { background: var(--bg2); }
+
+  .process-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    padding: 0 0 0 0;
+    position: relative;
+  }
+
+  .flow-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .flow-num {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 2px solid var(--neon);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--neon);
+    background: rgba(0,212,255,0.06);
+    box-shadow: 0 0 16px rgba(0,212,255,0.25);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+
+  .flow-step:hover .flow-num {
+    background: rgba(0,212,255,0.15);
+    box-shadow: 0 0 28px rgba(0,212,255,0.45);
+  }
+
+  .flow-connector {
+    width: 2px;
+    flex: 1;
+    min-height: 40px;
+    background: linear-gradient(180deg, var(--neon), transparent);
+    opacity: 0.3;
+  }
+
+  .flow-body {
+    padding-bottom: 2.5rem;
+    padding-top: 0.7rem;
+  }
+
+  .flow-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--white);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .flow-desc {
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* ── DEVELOPMENT STAGE ── */
+  #development { background: var(--bg); }
+
+  .stages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .stage-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+    cursor: default;
+  }
+
+  .stage-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon), var(--neon3));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .stage-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(0,212,255,0.4);
+    box-shadow: 0 12px 40px rgba(0,212,255,0.12);
+  }
+
+  .stage-card:hover::before { opacity: 1; }
+
+  .stage-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .stage-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--neon);
+    margin-bottom: 0.75rem;
+  }
+
+  .stage-desc {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .stage-badge {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    border: 1px solid;
+  }
+
+  .badge-done { border-color: var(--neon3); color: var(--neon3); background: rgba(0,255,204,0.06); }
+  .badge-progress { border-color: #ffaa00; color: #ffaa00; background: rgba(255,170,0,0.06); }
+  .badge-planned { border-color: var(--muted); color: var(--muted); background: transparent; }
+
+  /* ── SYSTEM DESIGN ── */
+  #system { background: var(--bg2); }
+
+  .system-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .sys-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 2rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .sys-card:hover {
+    border-color: rgba(0,212,255,0.35);
+    box-shadow: 0 0 30px rgba(0,212,255,0.08);
+  }
+
+  .sys-card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--neon);
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .sys-card-title::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--neon);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--neon);
+    flex-shrink: 0;
+  }
+
+  .sys-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .sys-list li {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    font-size: 0.9rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .sys-list li::before {
+    content: '→';
+    color: var(--neon);
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+  }
+
+  /* ── SKILLS ── */
+  #skills { background: var(--bg); }
+
+  .skills-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .skill-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 0.75rem 1.4rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--white);
+    transition: border-color 0.3s, box-shadow 0.3s, color 0.3s;
+  }
+
+  .skill-chip:hover {
+    border-color: var(--neon);
+    color: var(--neon);
+    box-shadow: 0 0 16px rgba(0,212,255,0.2);
+  }
+
+  .skill-chip .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--neon);
+    box-shadow: 0 0 6px var(--neon);
+  }
+
+  /* ── PATTERN PULSE ── */
+  #pattern { background: var(--bg2); }
+
+  .pattern-canvas-wrap {
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(0,10,20,0.6);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .pattern-title-sub {
+    font-size: 0.82rem;
+    color: var(--muted);
+    text-align: center;
+    max-width: 500px;
+  }
+
+  #patternCanvas {
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 8px;
+    cursor: pointer;
+    display: block;
+  }
+
+  .pattern-controls {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ── TEAM ── */
+  #team { background: var(--bg); }
+
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .member-card {
+    background: rgba(0,180,255,0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                border-color 0.3s, box-shadow 0.3s;
+    cursor: default;
+  }
+
+  .member-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .member-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: var(--neon);
+    box-shadow:
+      0 0 0 1px rgba(0,212,255,0.15),
+      0 8px 40px rgba(0,212,255,0.18),
+      0 0 60px rgba(0,212,255,0.08);
+  }
+
+  .member-card:hover::before { opacity: 1; }
+
+  .avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid var(--glass-border);
+    margin: 0 auto 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--neon);
+    background: radial-gradient(circle at 35% 35%, rgba(0,212,255,0.12), rgba(0,20,40,0.8));
+    position: relative;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .member-card:hover .avatar {
+    border-color: var(--neon);
+    box-shadow: 0 0 20px rgba(0,212,255,0.4);
+  }
+
+  .avatar::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.15);
+  }
+
+  .member-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--white);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .member-role {
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--neon);
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+
+  .member-type {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── CONTACT ── */
+  #contact { background: var(--bg2); text-align: center; }
+
+  .contact-inner {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  .contact-inner p {
+    color: var(--muted);
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+  }
+
+  .contact-email {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    color: var(--neon);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(0,212,255,0.3);
+    padding-bottom: 2px;
+    transition: border-color 0.3s;
+  }
+
+  .contact-email:hover { border-color: var(--neon); }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 2rem;
+    border-top: 1px solid var(--glass-border);
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  footer span { color: var(--neon); }
+
+  /* ── ANIMATIONS ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .fade-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { gap: 1.2rem; }
+    .overview-grid, .system-grid { grid-template-columns: 1fr; }
+    section { padding: 4rem 5vw; }
+  }
+
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .hero-title { font-size: 2rem; }
+    .overview-stats { grid-template-columns: 1fr 1fr; }
+    .team-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* HERO GRAPHIC */
+  .hero-graphic {
+    margin-top: 4rem;
+    position: relative;
+    width: 300px;
+    height: 300px;
+  }
+
+  .hex-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.2);
+    animation: spin-ring 20s linear infinite;
+  }
+
+  .hex-ring:nth-child(2) {
+    inset: 20px;
+    border-color: rgba(0,212,255,0.15);
+    animation-direction: reverse;
+    animation-duration: 15s;
+  }
+
+  .hex-ring:nth-child(3) {
+    inset: 45px;
+    border-color: rgba(0,255,204,0.12);
+    animation-duration: 25s;
+  }
+
+  .hex-core {
+    position: absolute;
+    inset: 80px;
+    background: radial-gradient(circle, rgba(0,212,255,0.15), rgba(0,80,120,0.08));
+    border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--neon);
+    text-transform: uppercase;
+    text-align: center;
+    animation: core-glow 3s ease-in-out infinite alternate;
+  }
+
+  .hex-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--neon);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--neon);
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) translateX(-4px);
+    transform-origin: 154px 0;
+  }
+
+  @keyframes spin-ring {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes core-glow {
+    from { box-shadow: 0 0 16px rgba(0,212,255,0.2); }
+    to { box-shadow: 0 0 32px rgba(0,212,255,0.45), 0 0 60px rgba(0,212,255,0.12); }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particles-canvas"></canvas>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Team<span>-4</span> // DNP</div>
+  <ul class="nav-links">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#process">Process</a></li>
+    <li><a href="#development">Stages</a></li>
+    <li><a href="#system">System</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#pattern">Pattern</a></li>
+    <li><a href="#team">Team</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="team-badge">// Team-4 Project Initiative //</div>
+  <h1 class="hero-title">
+    Digital Needle
+    <span class="accent">Positioning System</span>
+  </h1>
+  <p class="hero-subtitle">
+    Automating precision textile pattern formation through microcontroller-based needle control for Jacquard knitting machines.
+  </p>
+  <div class="hero-cta">
+    <a href="#overview" class="btn"><span>Explore Project</span></a>
+    <a href="#team" class="btn btn-ghost"><span>Meet the Team</span></a>
+  </div>
+  <div class="hero-graphic">
+    <div class="hex-ring"></div>
+    <div class="hex-ring"></div>
+    <div class="hex-ring"></div>
+    <div class="hex-core">Needle<br/>Ctrl<br/>System</div>
+  </div>
+</section>
+
+<!-- OVERVIEW -->
+<section id="overview">
+  <div class="sec-header fade-up">
+    <span class="sec-tag">01 // Project Overview</span>
+    <h2 class="sec-title">What We're Building</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="overview-grid">
+    <div class="overview-text fade-up">
+      <p>A <strong style="color:var(--neon)">digital needle positioning system</strong> for pattern jacquard automates the conversion of user-designed patterns into binary signals to control pin positions on jacquard wheels.</p>
+      <p>It replaces manual pin setting with a <strong style="color:var(--neon)">microcontroller-based mechanism</strong> that ensures accurate, repeatable, and efficient fabric pattern production.</p>
+      <p>The Automated Pin Programming Machine is a smart automation system designed to perform accurate pin positioning and programming with minimal human effort. The system works by receiving input commands through a control interface, processes the instructions, and automatically aligns the target position with high precision.</p>
+      <p>This eliminates manual errors, improves programming speed, and ensures consistent output quality across all production cycles.</p>
+    </div>
+    <div class="overview-stats fade-up">
+      <div class="stat-card">
+        <span class="stat-num">100%</span>
+        <div class="stat-label">Automation</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">ESP32</span>
+        <div class="stat-label">Controller</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">6+</span>
+        <div class="stat-label">Team Members</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">0</span>
+        <div class="stat-label">Manual Errors</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section id="process">
+  <div class="sec-header fade-up">
+    <span class="sec-tag">02 // Process Flow</span>
+    <h2 class="sec-title">How It Works</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="process-flow">
+
+    <div class="flow-step fade-up">
+      <div class="flow-left">
+        <div class="flow-num">01</div>
+        <div class="flow-connector"></div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-title">Input Command</div>
+        <div class="flow-desc">The operator inputs programming parameters through a centralized Human-Machine Interface (HMI). Pattern data is digitized and encoded into binary control signals.</div>
+      </div>
+    </div>
+
+    <div class="flow-step fade-up">
+      <div class="flow-left">
+        <div class="flow-num">02</div>
+        <div class="flow-connector"></div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-title">Intelligent Processing</div>
+        <div class="flow-desc">The ESP32 microcontroller processes positional coordinates, interprets binary pattern data, and generates motor control signals for precise movement execution.</div>
+      </div>
+    </div>
+
+    <div class="flow-step fade-up">
+      <div class="flow-left">
+        <div class="flow-num">03</div>
+        <div class="flow-connector"></div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-title">Motor Movement</div>
+        <div class="flow-desc">High-precision motion actuators activate and align the needle positioning mechanism to the target coordinates with sub-millimeter accuracy.</div>
+      </div>
+    </div>
+
+    <div class="flow-step fade-up">
+      <div class="flow-left">
+        <div class="flow-num">04</div>
+        <div class="flow-connector"></div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-title">Pin Positioning</div>
+        <div class="flow-desc">The system precisely positions each pin on the jacquard wheel according to the pattern data, replacing the error-prone manual pin-setting process entirely.</div>
+      </div>
+    </div>
+
+    <div class="flow-step fade-up">
+      <div class="flow-left">
+        <div class="flow-num">05</div>
+        <div class="flow-connector"></div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-title">Autonomous Execution & Feedback</div>
+        <div class="flow-desc">Integrated sensors continuously monitor positioning and motion accuracy. Real-time feedback validates each cycle before completion, ensuring defect-free operation.</div>
+      </div>
+    </div>
+
+    <div class="flow-step fade-up">
+      <div class="flow-left">
+        <div class="flow-num">06</div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-title">Completion</div>
+        <div class="flow-desc">The system confirms successful pattern encoding, logs the operation, and readies itself for the next cycle — fully autonomous from start to finish.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- DEVELOPMENT STAGE -->
+<section id="development">
+  <div class="sec-header fade-up">
+    <span class="sec-tag">03 // Development Stage</span>
+    <h2 class="sec-title">Project Milestones</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="stages-grid">
+
+    <div class="stage-card fade-up">
+      <span class="stage-icon">🔬</span>
+      <div class="stage-title">Research & Ideation</div>
+      <p class="stage-desc">Studied jacquard mechanics, analyzed existing manual pin-setting bottlenecks, and defined system requirements.</p>
+      <span class="stage-badge badge-done">Completed</span>
+    </div>
+
+    <div class="stage-card fade-up">
+      <span class="stage-icon">📐</span>
+      <div class="stage-title">CAD Modelling</div>
+      <p class="stage-desc">Designed full 3D mechanical assembly in Fusion 360, including motor mounts, needle guides, and chassis structure.</p>
+      <span class="stage-badge badge-done">Completed</span>
+    </div>
+
+    <div class="stage-card fade-up">
+      <span class="stage-icon">🖨️</span>
+      <div class="stage-title">3D Printing</div>
+      <p class="stage-desc">Prototyped key structural components using FDM 3D printing for rapid iteration and fit testing.</p>
+      <span class="stage-badge badge-done">Completed</span>
+    </div>
+
+    <div class="stage-card fade-up">
+      <span class="stage-icon">🔌</span>
+      <div class="stage-title">PCB Design</div>
+      <p class="stage-desc">Designed custom PCB integrating ESP32, motor drivers, sensor interfaces, and power management circuits.</p>
+      <span class="stage-badge badge-progress">In Progress</span>
+    </div>
+
+    <div class="stage-card fade-up">
+      <span class="stage-icon">💻</span>
+      <div class="stage-title">Firmware Development</div>
+      <p class="stage-desc">Writing embedded C firmware for ESP32 covering HMI input, pattern parsing, motor control, and real-time feedback loops.</p>
+      <span class="stage-badge badge-progress">In Progress</span>
+    </div>
+
+    <div class="stage-card fade-up">
+      <span class="stage-icon">⚙️</span>
+      <div class="stage-title">System Integration</div>
+      <p class="stage-desc">Final assembly, calibration, and end-to-end testing of the complete automated needle positioning pipeline.</p>
+      <span class="stage-badge badge-planned">Planned</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- SYSTEM DESIGN -->
+<section id="system">
+  <div class="sec-header fade-up">
+    <span class="sec-tag">04 // System Design</span>
+    <h2 class="sec-title">Architecture</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="system-grid">
+
+    <div class="sys-card fade-up">
+      <div class="sys-card-title">Hardware Components</div>
+      <ul class="sys-list">
+        <li>ESP32 Microcontroller — central processing unit</li>
+        <li>Stepper motors for high-torque, precise needle movement</li>
+        <li>Custom PCB with integrated motor driver ICs</li>
+        <li>Position sensors for real-time feedback</li>
+        <li>3D-printed chassis and mechanical assemblies</li>
+        <li>HMI interface panel for operator input</li>
+      </ul>
+    </div>
+
+    <div class="sys-card fade-up">
+      <div class="sys-card-title">Software Architecture</div>
+      <ul class="sys-list">
+        <li>Pattern digitization — bitmap to binary signal conversion</li>
+        <li>Real-time OS task scheduling on ESP32</li>
+        <li>PID-based motor control loop</li>
+        <li>Sensor data acquisition and validation pipeline</li>
+        <li>HMI communication protocol (UART / I2C)</li>
+        <li>Error detection and recovery state machine</li>
+      </ul>
+    </div>
+
+    <div class="sys-card fade-up">
+      <div class="sys-card-title">Key Innovations</div>
+      <ul class="sys-list">
+        <li>Fully replaces manual jacquard pin setting</li>
+        <li>Binary pattern encoding from graphical input</li>
+        <li>Closed-loop motion control for repeatability</li>
+        <li>Modular design for different machine compatibility</li>
+      </ul>
+    </div>
+
+    <div class="sys-card fade-up">
+      <div class="sys-card-title">Performance Targets</div>
+      <ul class="sys-list">
+        <li>Sub-millimeter positioning accuracy</li>
+        <li>Zero manual intervention after pattern upload</li>
+        <li>Defect detection before each cycle completion</li>
+        <li>Significant reduction in setup time vs manual method</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="sec-header fade-up">
+    <span class="sec-tag">05 // Skills & Tools</span>
+    <h2 class="sec-title">Technology Stack</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="skills-wrap fade-up">
+    <div class="skill-chip"><span class="dot"></span>CAD — Fusion 360</div>
+    <div class="skill-chip"><span class="dot"></span>Embedded Systems</div>
+    <div class="skill-chip"><span class="dot"></span>ESP32</div>
+    <div class="skill-chip"><span class="dot"></span>3D Printing (FDM)</div>
+    <div class="skill-chip"><span class="dot"></span>PCB Design</div>
+    <div class="skill-chip"><span class="dot"></span>Motor Control</div>
+    <div class="skill-chip"><span class="dot"></span>Firmware (C/C++)</div>
+    <div class="skill-chip"><span class="dot"></span>Sensor Integration</div>
+    <div class="skill-chip"><span class="dot"></span>HMI Design</div>
+    <div class="skill-chip"><span class="dot"></span>Jacquard Mechanics</div>
+    <div class="skill-chip"><span class="dot"></span>Real-Time Systems</div>
+    <div class="skill-chip"><span class="dot"></span>Signal Processing</div>
+  </div>
+</section>
+
+<!-- PATTERN PULSE -->
+<section id="pattern">
+  <div class="sec-header fade-up">
+    <span class="sec-tag">06 // Pattern Pulse</span>
+    <h2 class="sec-title">Interactive Grid Simulator</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="pattern-canvas-wrap fade-up">
+    <p class="pattern-title-sub">Click cells to toggle needle pin states — simulating the binary jacquard pattern encoding process used in the actual system.</p>
+    <canvas id="patternCanvas" width="420" height="280"></canvas>
+    <div class="pattern-controls">
+      <button class="btn" onclick="clearPattern()"><span>Clear Grid</span></button>
+      <button class="btn btn-ghost" onclick="randomPattern()"><span>Random Pattern</span></button>
+      <button class="btn btn-ghost" onclick="invertPattern()"><span>Invert</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id="team">
+  <div class="sec-header fade-up">
+    <span class="sec-tag">07 // Team</span>
+    <h2 class="sec-title">The Crew Behind It</h2>
+    <div class="sec-line"></div>
+  </div>
+  <div class="team-grid">
+
+    <div class="member-card fade-up">
+      <div class="avatar">S</div>
+      <div class="member-name"><a href="https://samyuktha-portfolio-nu.vercel.app/" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(0,212,255,0.4);">Samyuktha</a></div>
+      <div class="member-role">Visionary</div>
+      <div class="member-type">Team Lead</div>
+    </div>
+
+    <div class="member-card fade-up">
+      <div class="avatar">Sa</div>
+      <div class="member-name"><a href="https://shalini-six.vercel.app/" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(0,212,255,0.4);">Salini</a></div>
+      <div class="member-role">Hustler</div>
+      <div class="member-type">Operations</div>
+    </div>
+
+    <div class="member-card fade-up">
+      <div class="avatar">K</div>
+      <div class="member-name">Karthi</div>
+      <div class="member-role">Hacker</div>
+      <div class="member-type">Embedded Eng.</div>
+    </div>
+
+    <div class="member-card fade-up">
+      <div class="avatar">ML</div>
+      <div class="member-name"><a href="https://vercel.com/maghalashmis-projects/magha" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(0,212,255,0.4);">Maha Lakshmi</a></div>
+      <div class="member-role">Hacker</div>
+      <div class="member-type">Embedded Eng.</div>
+    </div>
+
+    <div class="member-card fade-up">
+      <div class="avatar">Si</div>
+      <div class="member-name"><a href="https://sidharthmano2006-web.github.io/Portfolio/" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(0,212,255,0.4);">Sidharth</a></div>
+      <div class="member-role">Designer</div>
+      <div class="member-type">Mechanical</div>
+    </div>
+
+    <div class="member-card fade-up">
+      <div class="avatar">M</div>
+      <div class="member-name"><a href="https://mouleeshwaran31-ui.github.io/index/" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(0,212,255,0.4);">Mouleeshwaran</a></div>
+      <div class="member-role">Designer</div>
+      <div class="member-type">PCB & Systems</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="contact-inner fade-up">
+    <div class="sec-header" style="text-align:center">
+      <span class="sec-tag" style="display:block;text-align:center">08 // Contact</span>
+      <h2 class="sec-title">Get In Touch</h2>
+      <div class="sec-line" style="margin:1rem auto 0"></div>
+    </div>
+    <p style="margin-top:2rem">Interested in the Digital Needle Positioning System or want to collaborate? We'd love to connect.</p>
+    <a href="mailto:team4.dnps@project.com" class="contact-email">team4.dnps@project.com</a>
+  </div>
+</section>
+
+<footer>
+  <span>Team-4</span> // Digital Needle Positioning System &nbsp;·&nbsp; All Rights Reserved 2025
+</footer>
+
+<script>
+/* ── PARTICLES ── */
+const canvas = document.getElementById('particles-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+function Particle() {
+  this.x = Math.random() * W;
+  this.y = Math.random() * H;
+  this.vx = (Math.random() - 0.5) * 0.25;
+  this.vy = (Math.random() - 0.5) * 0.25;
+  this.r = Math.random() * 1.5 + 0.3;
+  this.alpha = Math.random() * 0.5 + 0.1;
+  this.color = Math.random() > 0.6 ? '#00ffcc' : '#00d4ff';
+}
+
+Particle.prototype.update = function() {
+  this.x += this.vx;
+  this.y += this.vy;
+  if (this.x < 0) this.x = W;
+  if (this.x > W) this.x = 0;
+  if (this.y < 0) this.y = H;
+  if (this.y > H) this.y = 0;
+};
+
+for (let i = 0; i < 90; i++) particles.push(new Particle());
+
+function drawParticles() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => {
+    p.update();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.alpha;
+    ctx.fill();
+  });
+
+  // Draw connection lines
+  ctx.globalAlpha = 1;
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 100) {
+        ctx.beginPath();
+        ctx.strokeStyle = '#00d4ff';
+        ctx.globalAlpha = (1 - dist / 100) * 0.08;
+        ctx.lineWidth = 0.5;
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+/* ── SCROLL FADE ── */
+const faders = document.querySelectorAll('.fade-up');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), 80);
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+faders.forEach(el => observer.observe(el));
+
+/* ── PATTERN PULSE ── */
+const pc = document.getElementById('patternCanvas');
+const pcx = pc.getContext('2d');
+const COLS = 21, ROWS = 14;
+const CW = pc.width / COLS, CH = pc.height / ROWS;
+let grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+
+function drawGrid() {
+  pcx.clearRect(0, 0, pc.width, pc.height);
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const x = c * CW, y = r * CH;
+      if (grid[r][c]) {
+        pcx.fillStyle = 'rgba(0,212,255,0.85)';
+        pcx.fillRect(x + 1, y + 1, CW - 2, CH - 2);
+        pcx.shadowBlur = 10;
+        pcx.shadowColor = '#00d4ff';
+        pcx.fillRect(x + 1, y + 1, CW - 2, CH - 2);
+        pcx.shadowBlur = 0;
+      } else {
+        pcx.strokeStyle = 'rgba(0,212,255,0.15)';
+        pcx.lineWidth = 0.5;
+        pcx.strokeRect(x + 0.5, y + 0.5, CW - 1, CH - 1);
+      }
+    }
+  }
+}
+
+pc.addEventListener('click', e => {
+  const rect = pc.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const scaleX = pc.width / rect.width, scaleY = pc.height / rect.height;
+  const c = Math.floor(mx * scaleX / CW), r = Math.floor(my * scaleY / CH);
+  if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+    grid[r][c] ^= 1;
+    drawGrid();
+  }
+});
+
+function clearPattern() {
+  grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+  drawGrid();
+}
+
+function randomPattern() {
+  grid = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => Math.random() > 0.55 ? 1 : 0));
+  drawGrid();
+}
+
+function invertPattern() {
+  grid = grid.map(row => row.map(v => v ^ 1));
+  drawGrid();
+}
+
+drawGrid();
+</script>
+</body>
+</html>
